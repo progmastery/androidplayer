@@ -1,8 +1,10 @@
 package com.example.maryland.audioplayer;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.os.Environment;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -12,16 +14,17 @@ import java.util.HashMap;
 public class SongsManager {
     final String MEDIA_PATH = (Environment.getExternalStorageDirectory().toString() + "/Music");
     private ArrayList<HashMap<String, String>> songsList = new ArrayList<HashMap<String, String>>();
-
+    private Context context;
     // Constructor
-    public SongsManager() {
-
+    public SongsManager(Context context) {
+    this.context = context;
     }
 
     /**
      * Function to read all mp3 files and store the details in
      * ArrayList
      * */
+    @SuppressLint("ShowToast")
     public ArrayList<HashMap<String, String>> getPlayList() {
 
         Log.d("ddd", "MEDIA_PATH: "+MEDIA_PATH);
@@ -41,7 +44,10 @@ public class SongsManager {
             }
         }
         Log.d("ddd", "MethodgetPlayList: "+songsList.size());
+        if (songsList.size()==0) {
 
+            Toast.makeText(context,"There is no Audio to play!",Toast.LENGTH_SHORT).show();
+        }
         // return songs list array
         return songsList;
     }

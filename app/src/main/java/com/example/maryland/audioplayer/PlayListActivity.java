@@ -24,7 +24,7 @@ public class PlayListActivity extends ListActivity {
 
         ArrayList<HashMap<String, String>> songsListData = new ArrayList<HashMap<String, String>>();
 
-        SongsManager plm = new SongsManager();
+        SongsManager plm = new SongsManager(this);
         // get all songs from sdcard
         this.songsList = plm.getPlayList();
 

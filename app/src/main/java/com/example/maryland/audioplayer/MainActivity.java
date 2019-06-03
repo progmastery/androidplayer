@@ -1,9 +1,19 @@
 package com.example.maryland.audioplayer;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -33,8 +43,10 @@ public class MainActivity extends Activity
     private TextView songTitleLabel;
     private TextView songCurrentDurationLabel;
     private TextView songTotalDurationLabel;
-    private  MediaPlayer mp;
-    private Handler mHandler = new Handler();;
+    private MediaPlayer mp;
+    private Handler mHandler = new Handler();
+    private int READ_EXTERNAL_STORAGE_PERMISSION_CODE = 1;
+
     private SongsManager songManager;
     private Utilities utils;
     private int seekForwardTime = 5000;
@@ -44,6 +56,9 @@ public class MainActivity extends Activity
     private boolean isRepeat = false;
     private ArrayList<HashMap<String, String>> songsList = new ArrayList<HashMap<String, String>>();
 
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    @SuppressLint("ShowToast")
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,36 +78,48 @@ public class MainActivity extends Activity
         songCurrentDurationLabel = (TextView) findViewById(R.id.songCurrentDurationLabel);
         songTotalDurationLabel = (TextView) findViewById(R.id.songTotalDurationLabel);
 
+        if (ContextCompat.checkSelfPermission(MainActivity.this,
+                Manifest.permission.READ_EXTERNAL_STORAGE)== PackageManager.PERMISSION_GRANTED){
+
+            songManager = new SongsManager(this);
+
+            songsList = songManager.getPlayList();
+
+        }
+        else {
+            requestPermission();
+        }
+
         // Mediaplayer
         mp = new MediaPlayer();
-        songManager = new SongsManager();
         utils = new Utilities();
 
         // Listeners
         songProgressBar.setOnSeekBarChangeListener(this);
         mp.setOnCompletionListener(this);
+        Log.d("ddd", "MainActivity: " + songsList.size());
 
-        // Getting all songs list
-        songsList = songManager.getPlayList();
-
-        Log.d("ddd", "MainActivity: "+songsList.size());
-        // By default play first song
-        playSong(0);
-
+        if (songsList.size() != 0) {
+            // By default play first song
+            playSong(0);
+        } else {
+            Toast.makeText(this, "There is no Audio to play!", Toast.LENGTH_SHORT).show();
+        }
         btnPlay.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View arg0) {
+
                 // check for already playing
-                if(mp.isPlaying()){
-                    if(mp!=null){
+                if (mp.isPlaying()) {
+                    if (mp != null) {
                         mp.pause();
                         // Changing button image to play button
                         btnPlay.setImageResource(R.drawable.applyplay);
                     }
-                }else{
+                } else {
                     // Resume song
-                    if(mp!=null){
+                    if (mp != null) {
                         mp.start();
                         // Changing button image to pause button
                         btnPlay.setImageResource(R.drawable.applypause);
@@ -109,10 +136,10 @@ public class MainActivity extends Activity
                 // get current song position
                 int currentPosition = mp.getCurrentPosition();
                 // check if seekForward time is lesser than song duration
-                if(currentPosition + seekForwardTime <= mp.getDuration()){
+                if (currentPosition + seekForwardTime <= mp.getDuration()) {
                     // forward song
                     mp.seekTo(currentPosition + seekForwardTime);
-                }else{
+                } else {
                     // forward to end position
                     mp.seekTo(mp.getDuration());
                 }
@@ -126,10 +153,10 @@ public class MainActivity extends Activity
                 // get current song position
                 int currentPosition = mp.getCurrentPosition();
                 // check if seekBackward time is greater than 0 sec
-                if(currentPosition - seekBackwardTime >= 0){
+                if (currentPosition - seekBackwardTime >= 0) {
                     // forward song
                     mp.seekTo(currentPosition - seekBackwardTime);
-                }else{
+                } else {
                     // backward to starting position
                     mp.seekTo(0);
                 }
@@ -142,10 +169,10 @@ public class MainActivity extends Activity
             @Override
             public void onClick(View arg0) {
                 // check if next song is there or not
-                if(currentSongIndex < (songsList.size() - 1)){
+                if (currentSongIndex < (songsList.size() - 1)) {
                     playSong(currentSongIndex + 1);
                     currentSongIndex = currentSongIndex + 1;
-                }else{
+                } else {
                     // play first song
                     playSong(0);
                     currentSongIndex = 0;
@@ -158,10 +185,10 @@ public class MainActivity extends Activity
 
             @Override
             public void onClick(View arg0) {
-                if(currentSongIndex > 0){
+                if (currentSongIndex > 0) {
                     playSong(currentSongIndex - 1);
                     currentSongIndex = currentSongIndex - 1;
-                }else{
+                } else {
                     // play last song
                     playSong(songsList.size() - 1);
                     currentSongIndex = songsList.size() - 1;
@@ -174,11 +201,11 @@ public class MainActivity extends Activity
 
             @Override
             public void onClick(View arg0) {
-                if(isRepeat){
+                if (isRepeat) {
                     isRepeat = false;
                     Toast.makeText(getApplicationContext(), "Repeat is OFF", Toast.LENGTH_SHORT).show();
                     btnRepeat.setImageResource(R.drawable.repeat);
-                }else{
+                } else {
                     // make repeat to true
                     isRepeat = true;
                     Toast.makeText(getApplicationContext(), "Repeat is ON", Toast.LENGTH_SHORT).show();
@@ -195,13 +222,13 @@ public class MainActivity extends Activity
 
             @Override
             public void onClick(View arg0) {
-                if(isShuffle){
+                if (isShuffle) {
                     isShuffle = false;
                     Toast.makeText(getApplicationContext(), "Shuffle is OFF", Toast.LENGTH_SHORT).show();
                     btnShuffle.setImageResource(R.drawable.shuffle);
-                }else{
+                } else {
                     // make repeat to true
-                    isShuffle= true;
+                    isShuffle = true;
                     Toast.makeText(getApplicationContext(), "Shuffle is ON", Toast.LENGTH_SHORT).show();
                     // make shuffle to false
                     isRepeat = false;
@@ -227,7 +254,7 @@ public class MainActivity extends Activity
     protected void onActivityResult(int requestCode,
                                     int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(resultCode == 100){
+        if (resultCode == 100) {
             currentSongIndex = data.getExtras().getInt("songIndex");
             // play selected song
             playSong(currentSongIndex);
@@ -235,7 +262,7 @@ public class MainActivity extends Activity
 
     }
 
-    public void  playSong(int songIndex){
+    public void playSong(int songIndex) {
         // Play song
         try {
             mp.reset();
@@ -274,12 +301,12 @@ public class MainActivity extends Activity
             long currentDuration = mp.getCurrentPosition();
 
             // Displaying Total Duration time
-            songTotalDurationLabel.setText(""+utils.milliSecondsToTimer(totalDuration));
+            songTotalDurationLabel.setText("" + utils.milliSecondsToTimer(totalDuration));
             // Displaying time completed playing
-            songCurrentDurationLabel.setText(""+utils.milliSecondsToTimer(currentDuration));
+            songCurrentDurationLabel.setText("" + utils.milliSecondsToTimer(currentDuration));
 
             // Updating progress bar
-            int progress = (int)(utils.getProgressPercentage(currentDuration, totalDuration));
+            int progress = (int) (utils.getProgressPercentage(currentDuration, totalDuration));
             //Log.d("Progress", ""+progress);
             songProgressBar.setProgress(progress);
 
@@ -317,20 +344,20 @@ public class MainActivity extends Activity
     public void onCompletion(MediaPlayer arg0) {
 
         // check for repeat is ON or OFF
-        if(isRepeat){
+        if (isRepeat) {
             // repeat is on play same song again
             playSong(currentSongIndex);
-        } else if(isShuffle){
+        } else if (isShuffle) {
             // shuffle is on - play a random song
             Random rand = new Random();
             currentSongIndex = rand.nextInt((songsList.size() - 1) - 0 + 1) + 0;
             playSong(currentSongIndex);
-        } else{
+        } else {
             // no repeat or shuffle ON - play next song
-            if(currentSongIndex < (songsList.size() - 1)){
+            if (currentSongIndex < (songsList.size() - 1)) {
                 playSong(currentSongIndex + 1);
                 currentSongIndex = currentSongIndex + 1;
-            }else{
+            } else {
                 // play first song
                 playSong(0);
                 currentSongIndex = 0;
@@ -339,8 +366,52 @@ public class MainActivity extends Activity
     }
 
     @Override
-    public void onDestroy(){
+    public void onDestroy() {
         super.onDestroy();
         mp.release();
+    }
+    private void requestPermission(){
+
+        if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,Manifest.permission.READ_EXTERNAL_STORAGE)){
+
+            new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("Permission needed")
+                    .setMessage("Allow to access your SdCard Audios")
+                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                        @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},READ_EXTERNAL_STORAGE_PERMISSION_CODE);
+                            songsList = songManager.getPlayList();
+
+                        }
+                    })
+                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            dialog.dismiss();
+                        }
+                    }).create().show();
+        }
+        else {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.READ_CONTACTS},READ_EXTERNAL_STORAGE_PERMISSION_CODE);
+
+        }
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        if (requestCode == READ_EXTERNAL_STORAGE_PERMISSION_CODE){
+            if (grantResults.length>0 && grantResults[0]==PackageManager.PERMISSION_GRANTED){
+
+                songsList = songManager.getPlayList();
+            }else {
+                Toast.makeText(MainActivity.this,"Your Permission denied. Shut down.",Toast.LENGTH_LONG).show();
+
+                finish();
+            }
+        }
     }
 }
