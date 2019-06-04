@@ -23,13 +23,6 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.karumi.dexter.Dexter;
-import com.karumi.dexter.PermissionToken;
-import com.karumi.dexter.listener.PermissionDeniedResponse;
-import com.karumi.dexter.listener.PermissionGrantedResponse;
-import com.karumi.dexter.listener.PermissionRequest;
-import com.karumi.dexter.listener.single.PermissionListener;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -85,45 +78,18 @@ public class MainActivity extends Activity
         songCurrentDurationLabel = (TextView) findViewById(R.id.songCurrentDurationLabel);
         songTotalDurationLabel = (TextView) findViewById(R.id.songTotalDurationLabel);
 
-      Dexter.withActivity(this)
-              .withPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-              .withListener(new PermissionListener() {
-                  @Override
-                  public void onPermissionGranted(PermissionGrantedResponse response) {
-                      songManager = new SongsManager(MainActivity.this);
-
-                      songsList = songManager.getPlayList();
-
-                  }
-
-                  @Override
-                  public void onPermissionDenied(PermissionDeniedResponse response) {
-
-                      Toast.makeText(MainActivity.this,"Your Permission denied. Shut down.",Toast.LENGTH_LONG).show();
-
-                  }
-
-                  @Override
-                  public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
-
-                      token.cancelPermissionRequest();
-                  }
-              }).check();
         // Mediaplayer
         mp = new MediaPlayer();
         utils = new Utilities();
 
         // Listeners
-        songProgressBar.setOnSeekBarChangeListener(MainActivity.this);
-        mp.setOnCompletionListener(MainActivity.this);
+        songProgressBar.setOnSeekBarChangeListener(this);
+        mp.setOnCompletionListener(this);
         Log.d("ddd", "MainActivity: " + songsList.size());
 
-        if (songsList.size() != 0) {
-            // By default play first song
-            playSong(0);
-        } else {
-            Toast.makeText(this, "There is no Audio to play!", Toast.LENGTH_SHORT).show();
-        }
+
+
+
         btnPlay.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -267,6 +233,20 @@ public class MainActivity extends Activity
             }
         });
 
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
+            requestPermission();
+            return;
+        }
+
+        songManager = new SongsManager(this);
+        songsList = songManager.getPlayList();
+
+        if (songsList.size() != 0) {
+            // By default play first song
+            playSong(0);
+        } else {
+            Toast.makeText(this, "There is no Audio to play!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -389,5 +369,53 @@ public class MainActivity extends Activity
         super.onDestroy();
         mp.release();
     }
+    private void requestPermission(){
 
+        if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,Manifest.permission.READ_EXTERNAL_STORAGE)){
+
+            new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("Permission needed")
+                    .setMessage("Allow to access your SdCard Audios")
+                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                        @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},READ_EXTERNAL_STORAGE_PERMISSION_CODE);
+
+                        }
+                    })
+                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            dialog.dismiss();
+                        }
+                    }).create().show();
+        }
+        else {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},READ_EXTERNAL_STORAGE_PERMISSION_CODE);
+        }
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        if (requestCode == READ_EXTERNAL_STORAGE_PERMISSION_CODE){
+            if (grantResults.length>0 && grantResults[0]==PackageManager.PERMISSION_GRANTED){
+                songManager = new SongsManager(MainActivity.this);
+
+                songsList = songManager.getPlayList();
+                if (songsList.size() != 0) {
+                    // By default play first song
+                    playSong(0);
+                } else {
+                    Toast.makeText(this, "There is no Audio to play!", Toast.LENGTH_SHORT).show();
+                }
+            }else {
+                Toast.makeText(MainActivity.this,"Your Permission denied. Shut down.",Toast.LENGTH_LONG).show();
+
+                finish();
+            }
+        }
+    }
 }
