@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 public class PlayListActivity extends ListActivity {
     // Songs list
     public ArrayList<HashMap<String, String>> songsList = new ArrayList<HashMap<String, String>>();
+    ListView listView;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -45,9 +47,10 @@ public class PlayListActivity extends ListActivity {
         setListAdapter(adapter);
 
         // selecting single ListView item
-        ListView lv = getListView();
+        listView = getListView();
+
         // listening to single listitem click
-        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view,
